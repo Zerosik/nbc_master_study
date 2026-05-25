@@ -9,6 +9,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 struct FInputActionValue;
+class UStatusComponent;
 
 UCLASS()
 class MASTER_0424_API AShooterCharacter : public ACharacter
@@ -23,6 +24,8 @@ public:
 	USpringArmComponent* SpringArmComp;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
+	UPROPERTY()
+	UStatusComponent* StatusComponent;
 	UPROPERTY(EditAnywhere, Category = "Weapon")
     TSubclassOf<class AActor> WeaponClass;
 
@@ -40,6 +43,10 @@ public:
 	
 	UFUNCTION()
 	FVector GetCameraTargetLocation();
+	
+	UFUNCTION(BlueprintCallable)
+	UStatusComponent* GetStatusComponent() const { return StatusComponent; };
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -74,6 +81,9 @@ protected:
 	void Fire(const FInputActionValue& value);
 
 private:
+	UFUNCTION()
+	void PlayerOnDead(AController* DamageInstigator);
+
 	bool bIsAiming = false;
 	bool bIsSprinting = false;
 	bool bIsWalking = false;

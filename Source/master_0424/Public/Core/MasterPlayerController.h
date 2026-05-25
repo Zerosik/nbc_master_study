@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UInputAction;
+class UPlayerHudWidget;
 
 UCLASS()
 class MASTER_0424_API AMasterPlayerController : public APlayerController
@@ -30,7 +31,20 @@ public:
 	UInputAction* AimingAction;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* FireAction;
+
+	
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UPlayerHudWidget> HUDWidgetClass;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
 
+	void InitializeInput();
+	void InitHUDWidget();
+
+	
+private:
+	UPROPERTY()
+	TObjectPtr<UPlayerHudWidget> HUDWidgetInstance;
 };

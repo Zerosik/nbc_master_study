@@ -3,6 +3,9 @@
 
 #include "Core/MasterPlayerController.h"
 #include "EnhancedInputSubsystems.h"
+#include "UI/PlayerHudWidget.h"
+#include "Components/StatusComponent.h"
+#include "Character/ShooterCharacter.h"
 
 AMasterPlayerController::AMasterPlayerController()
 	:InputMappingContext(nullptr), 
@@ -30,4 +33,32 @@ void AMasterPlayerController::BeginPlay()
 			}
 		}
 	}
+
+	InitHUDWidget();
+}
+
+void AMasterPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+}
+
+void AMasterPlayerController::InitializeInput()
+{
+
+}
+void AMasterPlayerController::InitHUDWidget()
+{
+	if (HUDWidgetInstance || !HUDWidgetClass) return;
+
+	HUDWidgetInstance = CreateWidget<UPlayerHudWidget>(this, HUDWidgetClass);
+	if (!HUDWidgetInstance) return;
+
+	HUDWidgetInstance->AddToViewport();
+
+	AShooterCharacter* PlayerCharacter = Cast<AShooterCharacter>(GetPawn());
+	if (!PlayerCharacter) return;
+
+	UStatusComponent* StatusComponent = PlayerCharacter->GetStatusComponent();
+	if (!StatusComponent) return;
+	HUDWidgetInstance->InitWidget(StatusComponent);
 }

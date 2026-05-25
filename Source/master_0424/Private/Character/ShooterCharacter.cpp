@@ -9,6 +9,8 @@
 #include "Core/MasterPlayerController.h"
 #include "Weapon/SandboxWeaponBase.h"
 #include "MyWeapon/FirearmBase.h"
+#include "Components/StatusComponent.h"
+#include "Components/CapsuleComponent.h"
 
 
 // Sets default values
@@ -32,6 +34,9 @@ AShooterCharacter::AShooterCharacter()
 	SprintSPeedMultiplier = 1.6f;
 	SprintSpeed = RuningSpeed * SprintSPeedMultiplier;
 	GetCharacterMovement()->MaxWalkSpeed = RuningSpeed;
+
+	StatusComponent = CreateDefaultSubobject<UStatusComponent>(TEXT("StatusComponent"));
+	StatusComponent->OnCharacterDeath.AddDynamic(this, &AShooterCharacter::PlayerOnDead);
 }
 // Called when the game starts or when spawned
 void AShooterCharacter::BeginPlay()
@@ -230,6 +235,32 @@ void AShooterCharacter::Fire(const FInputActionValue& value)
 	AFirearmBase* Weapon2 = Cast<AFirearmBase>(AttachedWeapon);
 	if (Weapon2) {
 		Weapon2->Fire();
+	}
+}
+
+void AShooterCharacter::PlayerOnDead(AController* DamageInstigator)
+{
+	// 1. 컨트롤러 입력 및 무브먼트 정지
+	if (GetController())
+	{
+		DisableInput(Cast<APlayerController>(GetController()));
+	}
+	GetCharacterMovement()->DisableMovement();
+	GetCharacterMovement()->StopMovementImmediately();
+
+	// 2. 캡슐 컴포넌트 콜리전 비활성화
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	// 3. 메쉬(Mesh) 물리 시뮬레이션 활성화 및 래그돌 프리셋 적용
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (MeshComp)
+	{
+		MeshComp->SetCollisionProfileName(TEXT("Ragdoll")); //
+		MeshComp->SetSimulatePhysics(true);                 //
+		MeshComp->SetAllBodiesSimulatePhysics(true);
+		MeshComp->WakeAllRigidBodies();
+		MeshComp->bBlendPhysics = true;
 	}
 }
 
