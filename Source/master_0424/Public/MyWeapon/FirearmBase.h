@@ -8,6 +8,7 @@
 
 class AShooterCharacter;
 class ABulletActor;
+class UObjectPoolSubsystem;
 
 UCLASS()
 class MASTER_0424_API AFirearmBase : public AActor
@@ -26,7 +27,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
     TSubclassOf<ABulletActor> ProjectileClass;
 
-
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -98,6 +99,9 @@ private:
 	UPROPERTY()
 	AShooterCharacter* OwnerCharacter;
 
+	UPROPERTY()
+	TObjectPtr<UObjectPoolSubsystem> PoolSubsystem;
+	
 	UFUNCTION()
 	void HandleFireDelay();
 

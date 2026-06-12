@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "Components/ArrowComponent.h"
 #include "Character/ShooterCharacter.h"
+#include "Subsystem/ObjectPoolSubsystem.h"
 #include "MyWeapon/BulletActor.h"
 // Sets default values
 AFirearmBase::AFirearmBase()
@@ -17,6 +18,7 @@ AFirearmBase::AFirearmBase()
 
 	FirePoint = CreateDefaultSubobject<UArrowComponent>(TEXT("FirePoint"));
 	FirePoint->SetupAttachment(Root);
+	
 }
 void AFirearmBase::BeginPlay()
 {
@@ -24,6 +26,9 @@ void AFirearmBase::BeginPlay()
 
 	OwnerCharacter = Cast<AShooterCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	CurrentSpread = MinSpread;
+	
+	
+	PoolSubsystem = GetWorld()->GetSubsystem<UObjectPoolSubsystem>();
 }
 
 void AFirearmBase::Tick(float DeltaTime)
@@ -122,20 +127,47 @@ void AFirearmBase::FireBullet()
 	SpawnParams.Instigator = OwnerCharacter;
 	SpawnParams.SpawnCollisionHandlingOverride =
 		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	// BeginPlay에서 서브시스템을 못 가져온 경우를 대비해 다시 가져옵니다.
+	if (!PoolSubsystem)
+	{
+		// 현재 월드에서 오브젝트 풀 서브시스템을 가져옵니다.
+		PoolSubsystem = World->GetSubsystem<UObjectPoolSubsystem>();
+	}
+
+	// 풀 서브시스템이 없으면 풀 총알을 가져올 수 없으므로 발사를 중단합니다.
+	if (!PoolSubsystem)
+	{
+		// 안전하게 함수 실행을 끝냅니다.
+		return;
+	}
+
 	for (int32 i = 0; i < Pellets; i++) {
-
-
+		
+		// 서브시스템 Pool방식
+		// 풀에서 가져온 총알을 위치, 탄퍼짐 방향, 사거리 기준으로 실제 발사합니다.
+		AActor* Bullet = PoolSubsystem->GetPooledActor(FName("Bullet"));
+		if (IsValid(Bullet) == false)
+			continue;
+		ABulletActor* BulletActor = Cast<ABulletActor>(Bullet);
+		if (IsValid(BulletActor) == false)
+			continue;
+		
 		FRotator SpreadRotation = SpawnRotation + FRotator{ 
 			FMath::FRandRange(-CurrentSpread, CurrentSpread),
 			FMath::FRandRange(-CurrentSpread, CurrentSpread),
 			0 };
-		ABulletActor* bullet = World->SpawnActor<ABulletActor>(
-			ProjectileClass,
-			SpawnLocation,
-			SpreadRotation,
-			SpawnParams
-		);
-		bullet->SetMaxDistance(Range);
+		
+		BulletActor->ActivateProjectile(SpawnLocation, SpreadRotation, Range);
+		
+		// 기존의 Spawn방식
+		// ABulletActor* bullet = World->SpawnActor<ABulletActor>(
+		// 	ProjectileClass,
+		// 	SpawnLocation,
+		// 	SpreadRotation,
+		// 	SpawnParams
+		// );
+		// bullet->SetMaxDistance(Range);
+		
 	}
 
 	bCanShot = false;
